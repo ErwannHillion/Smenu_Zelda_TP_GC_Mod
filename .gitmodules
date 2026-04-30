@@ -1,0 +1,3 @@
+[submodule "mod/externals/libtp_rel"]
+	path = mod/externals/libtp_rel
+	url = https://github.com/zsrtp/libtp_rel.git
