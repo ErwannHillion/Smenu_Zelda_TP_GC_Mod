@@ -21,3 +21,7 @@ Thumbs.db
 *.gcm
 *.wbfs
 TP_Extracted/
+
+# DOL is game content — keep it gitignored
+# Users must provide their own via extract_ciso.py
+game/main.dol
