@@ -161,3 +161,5 @@
 80097E8C:execItemGet
 80019D98:fopAcM_create
 8002D2FC:dComIfGp_setNextStage
+80006ABC:OSReport
+800068A0:OSReportEnable

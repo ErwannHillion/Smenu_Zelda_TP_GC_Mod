@@ -2,6 +2,12 @@
  * @file main.cpp
  * @brief TP Mod Menu
  * B+Z: Toggle | DPad: Nav | A: Add/Execute | X: Remove | Start: Close
+ *
+ * @author SHDXW (Erwann Hillion)
+ *
+ * Dedicace à Cruzol, mon prof de C++.
+ * Sans ses cours, ce mod n'existerait pas :).
+ * Vous aviez raison, les pointeurs ça sert vraiment.
  */
 #include <main.h>
 #include <cstdio>
@@ -14,6 +20,7 @@
 #include <tp/d_save.h>
 #include <tp/f_op_actor_mng.h>
 #include <tp/m_do_controller_pad.h>
+#include <tp/m_do_printf.h>
 #include <data/items.h>
 
 namespace mod
@@ -122,14 +129,23 @@ namespace mod
 
     Mod::Mod(): menuActive(false), category(0), option(0), inputDelay(0) {}
 
+    // Shortcut for logging
+    #define LOG(fmt, ...) libtp::tp::m_Do_printf::OSReport("[SMenu] " fmt "\n", ##__VA_ARGS__)
+
     void Mod::init()
     {
         gMod = this;
+        // Re-enable OSReport (the game disables it after boot)
+        libtp::tp::m_Do_printf::OSReportEnable();
+        LOG("=== SMenu v1.0 by SHDXW ===");
+        LOG("Initializing mod menu...");
         libtp::display::setConsole(false, 25);
         libtp::display::setConsoleColor(10, 10, 40, 180);
         return_fapGm_Execute =
             libtp::patch::hookFunction(libtp::tp::f_ap_game::fapGm_Execute,
                                         []() { return gMod->procNewFrame(); });
+        LOG("Hook on fapGm_Execute installed");
+        LOG("Ready! Press B+Z to open menu");
     }
 
     void Mod::procNewFrame()
@@ -143,9 +159,11 @@ namespace mod
             if (menuActive) {
                 category = 0; option = 0;
                 libtp::display::setConsole(true, 25);
+                LOG("Menu opened");
             } else {
                 libtp::display::setConsole(false, 25);
                 libtp::display::clearConsole(0, 0);
+                LOG("Menu closed");
             }
             inputDelay = 10;
         }
@@ -176,7 +194,9 @@ namespace mod
         if ((trig & Button_X) && (category == 0 || category == 1))
         {
             uint8_t id = (category == 0) ? weapons[option].itemId : bottles[option].itemId;
+            const char* name = (category == 0) ? weapons[option].name : bottles[option].name;
             removeItem(id);
+            LOG("Removed item: %s (0x%02X)", name, id);
             inputDelay = 12;
         }
 
@@ -275,10 +295,18 @@ namespace mod
     {
         auto& s = dComIfG_gameInfo.save.save_file.player.player_status_a;
 
+        LOG("Execute action: cat=%d (%s) opt=%d", category, catNames[category], option);
+
         switch (category)
         {
-        case 0: execItemGet(weapons[option].itemId); break;
-        case 1: execItemGet(bottles[option].itemId); break;
+        case 0:
+            LOG("Give weapon: %s (0x%02X)", weapons[option].name, weapons[option].itemId);
+            execItemGet(weapons[option].itemId);
+            break;
+        case 1:
+            LOG("Give bottle: %s (0x%02X)", bottles[option].name, bottles[option].itemId);
+            execItemGet(bottles[option].itemId);
+            break;
         case 2:
             switch (option) {
             case 0: s.maxHealth += 2; if(s.maxHealth>80) s.maxHealth=80; s.currentHealth=s.maxHealth; break;
@@ -288,7 +316,9 @@ namespace mod
             case 4: if(s.maxHealth>2) s.maxHealth-=2; if(s.currentHealth>s.maxHealth) s.currentHealth=s.maxHealth; break;
             case 5: if(s.maxHealth>10) s.maxHealth-=10; else s.maxHealth=2; if(s.currentHealth>s.maxHealth) s.currentHealth=s.maxHealth; break;
             case 6: s.maxHealth=2; s.currentHealth=2; break;
-            } break;
+            }
+            LOG("Health: %s -> HP=%d/%d", hpOpts[option], s.currentHealth/2, s.maxHealth/2);
+            break;
         case 3:
             switch (option) {
             case 0: s.currentRupees+=10; break;
@@ -300,11 +330,17 @@ namespace mod
             case 6: if(s.currentRupees>=10) s.currentRupees-=10; else s.currentRupees=0; break;
             case 7: if(s.currentRupees>=50) s.currentRupees-=50; else s.currentRupees=0; break;
             case 8: s.currentRupees=0; break;
-            } break;
-        case 4: spawnEnemy(option); break;
+            }
+            LOG("Rupees: %s -> $%d", rupOpts[option], s.currentRupees);
+            break;
+        case 4:
+            LOG("Spawn enemy: %s (ID=0x%04X)", spawnOpts[option], enemyIDs[option]);
+            spawnEnemy(option);
+            break;
         case 5: // Teleport
             if (option >= 0 && option < NUM_TP) {
                 auto& tp = teleports[option];
+                LOG("Warp to: %s (stage=%s room=%d spawn=%d)", tp.name, tp.stage, tp.room, tp.spawn);
                 dComIfGp_setNextStage(tp.stage, tp.spawn, tp.room, -1, 0.0f, 0, 1, 0x0F, 0, 0, 0);
                 menuActive = false;
                 libtp::display::setConsole(false, 25);
