@@ -5,7 +5,7 @@
  *
  * @author SHDXW (Erwann Hillion)
  *
- * Dedicace à Cruzol, mon prof de C++.
+ * Dedicace à Mr. Cruzol, mon prof de C++.
  * Sans ses cours, ce mod n'existerait pas :).
  * Vous aviez raison, les pointeurs ça sert vraiment.
  */
